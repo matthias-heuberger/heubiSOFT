@@ -1,0 +1,96 @@
+#!/usr/bin/perl
+
+use lib '/home/wicker/data/WICKERsoft/';
+use Biomodule;
+
+
+if  (@ARGV < 2) {
+	print "1.= infile\n";
+	print "2.= threshold e.g. 0.6\n";
+	exit;
+	}
+
+
+$threshold=$ARGV[1];
+
+$prev1=1;
+$prev2=1;
+$switch="off";
+$chr_old="Chr1A";
+$count=0;
+$avg_cov=0;
+# create a file handle
+open (IN, "<$ARGV[0]");
+while (<IN>) {
+
+	# define regular expression (between /s)
+	($SRA,$chr,$bin_beg,$bin_end,$cov_ratio,$chr_len,$chr_numerical,$subgenome,$sample,$unique_chr) = /(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/;
+		
+	# if variable is found
+	if ($SRA) {
+		if ($cov_ratio<$threshold) {
+			if ($switch eq "off" and ($chr_old eq $chr)) {
+				$switch = "on";
+				$introgression_beg = $bin_beg;
+				$count=$count+1;
+				$avg_cov=($avg_cov*($count-1)+$cov_ratio)/($count);
+				#print "$avg_cov\t$count\n";
+			} elsif ($switch eq "on" and ($chr_old ne $chr)) {
+			$switch = "off";
+                                $introgression_beg = $last_beg;
+                                $introgression_end = $last_end;
+                                $size = $introgression_end-$introgression_beg;
+				$avg_cov=($avg_cov*($count-1)+$last_cov_ratio)/($count);
+                                print "$SRA\t$last_chr\t$introgression_beg\t$introgression_end\t$cov_ratio\t$last_chr_len\t$last_chr_numerical\t$last_subgenome\t$last_sample\t$last_unique_chr\t$last_unique_chr\_$introgression_beg\_$introgression_end\t$last_chr\_$introgression_beg\_$introgression_end\t$size\t$avg_cov\n";
+				$count=0;
+                                $avg_cov=0;
+			} elsif ($switch eq "on" and ($chr_old eq $chr)){
+				$count=$count+1;
+				$avg_cov=($avg_cov*($count-1)+$cov_ratio)/($count);
+				#print "$avg_cov\t$count\n";
+			
+			}
+		} else {
+			if ($switch eq "on" and ($chr_old eq $chr)) {
+				$switch = "off";
+				$introgression_end = $bin_beg;
+				$size = $introgression_end-$introgression_beg;
+				$avg_cov=$last_cov_avg;
+				#$avg_cov=($avg_cov*($count-1)+$last_cov_ratio)/($count);
+				print "$SRA\t$chr\t$introgression_beg\t$introgression_end\t$cov_ratio\t$chr_len\t$chr_numerical\t$subgenome\t$sample\t$unique_chr\t$unique_chr\_$introgression_beg\_$introgression_end\t$chr\_$introgression_beg\_$introgression_end\t$size\t$avg_cov\n";
+				$count=0;
+                                $avg_cov=0;
+			}
+			if ($switch eq "on" and ($chr_old ne $chr)) {
+				$switch = "off";
+				$introgression_beg = $last_beg;
+                                $introgression_end = $last_end;
+                                $size = $introgression_end-$introgression_beg;
+				$avg_cov=$last_cov_avg;
+				#$avg_cov=($avg_cov*($count-1)+$last_cov_ratio)/($count);
+                                print "$SRA\t$last_chr\t$introgression_beg\t$introgression_end\t$cov_ratio\t$last_chr_len\t$last_chr_numerical\t$last_subgenome\t$last_sample\t$last_unique_chr\t$last_unique_chr\_$introgression_beg\_$introgression_end\t$last_chr\_$introgression_beg\_$introgression_end\t$size\t$avg_cov\n";
+				$count=0;
+                                $avg_cov=0;
+			}
+
+	}
+	$last_beg=$introgression_beg;
+	$last_end=$bin_end;
+	$last_chr=$chr;
+	$last_unique_chr=$unique_chr;
+	$last_chr_len=$chr_len;
+	$last_chr_numerical=$chr_numerical;
+	$last_subgenome=$subgenome;
+	$last_sample=$sample;
+	$last_cov_ratio=$cov_ratio;
+	$last_cov_avg=$avg_cov;
+
+
+
+
+		#print "$SRA\t$chr\t$bin_beg\t$bin_end\t$cov_ratio\t$chr_len\t$chr_numerical\t$subgenome\t$sample\t$unique_chr\n";
+	}
+	$chr_old = $chr;
+}
+
+
