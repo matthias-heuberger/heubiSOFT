@@ -1,9 +1,5 @@
 #!/usr/bin/perl
 
-use lib '/home/wicker/data/WICKERsoft/';
-use Biomodule;
-
-
 if  (@ARGV < 2) {
 	print "1.= infile\n";
 	print "2.= threshold e.g. 0.6\n";
